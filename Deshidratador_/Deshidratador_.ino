@@ -34,7 +34,7 @@ void setup() {
   balanza1.begin(LOADCELL1_DOUT_PIN, LOADCELL1_SCK_PIN);
   balanza2.begin(LOADCELL2_DOUT_PIN, LOADCELL2_SCK_PIN);
 
-  WiFi.begin("SSID", "PASSWORD");  // Cambia por tus credenciales WiFi
+  WiFi.begin("TilinesTec", "ConectatePa123");  // Cambia por tus credenciales WiFi
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -63,7 +63,7 @@ void enviarDatos() {
   }
 
   HTTPClient http;
-  http.begin(client, "https://ipnproyecto.samayoaprojects.com.mx/deshidratadores/deshidratadormanzanas1/data");
+  http.begin(client, "http://ipnproyecto.samayoaprojects.com.mx/deshidratadores/deshidratadormanzanas1/data");
   
   // Para enviar en formato JSON
   
@@ -84,6 +84,5 @@ void enviarDatos() {
   } else {
     Serial.println("Error en la conexión: " + String(httpResponseCode));
   }
-
-  http.end();
+  http.end();
 }
