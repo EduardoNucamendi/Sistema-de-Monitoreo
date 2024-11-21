@@ -6,9 +6,9 @@
 #include <LiquidCrystal_I2C.h>
 
 #define DHTPIN 4                // Pin conectado al DHT22
-#define DHTTYPE DHT22      // Definir tipo de sensor como DHT22
+#define DHTTYPE DHT22           // Definir tipo de sensor como DHT22
 
-DHT dht(DHTPIN, DHTTYPE); // Crear objeto DHT
+DHT dht(DHTPIN, DHTTYPE);     // Crear objeto DHT
 
 LiquidCrystal_I2C lcd(0x27, 16, 2); // Dirección I2C del LCD
 
@@ -28,9 +28,9 @@ float lux;
 BH1750 lightMeter;
 
 // Variables para el control de la pantalla y temporizadores
-unsigned long tiempoAnteriorPantalla = 0; 
-unsigned long tiempoAnteriorEnvio = 0;    
-unsigned long tiempoAnteriorRutina = 0;   
+unsigned long tiempoAnteriorPantalla = 0;
+unsigned long tiempoAnteriorEnvio = 0;
+unsigned long tiempoAnteriorRutina = 0;
 
 const long intervaloPantalla = 2000;  // Intervalo de 2 segundos para actualización del LCD
 const long intervaloEnvio = 60000;    // Intervalo de 1 minuto para envío de datos
@@ -39,11 +39,10 @@ const long intervaloRutina = 20000;  // Intervalo de 20 segundos para la rutina 
 int pantallaActual = 0; // Estado de la pantalla para alternar entre datos
 
 // Variables para el control de los relés y el sensor de nivel de agua
-const int releNivelBajoPin = 5;       
-const int releNivelAltoPin = 32;      
-const int sensorNivelAguaPin = 34;    
+const int releNivelBajoPin = 5;
+const int releNivelAltoPin = 32;
+const int sensorNivelAguaPin = 34;
 
-// Variables para la ejecución de la rutina de los relés
 bool rutinaEjecutando = false;
 unsigned long tiempoEsperarNivelBajo = 0;
 
@@ -51,8 +50,8 @@ void setup() {
   Serial.begin(115200);
   Serial.println(F("Iniciando sistema BH1750 y DHT22..."));
 
-  dht.begin();  
-  Wire.begin(21, 22);  
+  dht.begin();
+  Wire.begin(21, 22);
   if (lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE)) {
     Serial.println(F("Sensor BH1750 iniciado correctamente"));
   } else {
@@ -60,14 +59,14 @@ void setup() {
     while (1);
   }
 
-  delay(2000);  
+  delay(2000);
 
   lux = lightMeter.readLightLevel();
   Serial.print("Lectura inicial de luz descartada: ");
   Serial.println(lux);
 
-  lcd.begin(16, 2);  
-  lcd.backlight();  
+  lcd.begin(16, 2);
+  lcd.backlight();
 
   WiFi.begin(ssid, password);
   Serial.print("Conectando a WiFi");
@@ -86,8 +85,6 @@ void setup() {
   digitalWrite(releNivelBajoPin, LOW);
   digitalWrite(releNivelAltoPin, LOW);
 
-  // No es necesario llamar EnvioDatos() directamente aquí.
-  
   // Crear tareas para FreeRTOS
   xTaskCreatePinnedToCore(actualizarPantallaTask, "ActualizarPantalla", 2048, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(leerSensoresTask, "LeerSensores", 2048, NULL, 1, NULL, 1);
@@ -108,7 +105,7 @@ void actualizarPantallaTask(void* parameter) {
         lcd.setCursor(0, 0);
         lcd.print("Temp: ");
         lcd.print(temp);
-        lcd.print("C  ");
+        lcd.print("C");
         Serial.print("Temperatura: ");
         Serial.print(temp);
         Serial.println(" *C");
@@ -121,7 +118,7 @@ void actualizarPantallaTask(void* parameter) {
         lcd.setCursor(0, 0);
         lcd.print("Hum: ");
         lcd.print(humidity);
-        lcd.print("%  ");
+        lcd.print("%");
         Serial.print("Humedad: ");
         Serial.print(humidity);
         Serial.println(" %");
@@ -215,10 +212,16 @@ void envioDatosTask(void* parameter) {
           } else {
             Serial.println("Error en la solicitud HTTP: " + String(codigo_respuesta));
           }
-          http.e;  // Espera no bloqueante, para liberar el microcontrolador
+          http.end();
+        } else {
+          Serial.println("Error: No hay conexión WiFi.");
+        }
+        tiempoUltimoEnvio = tiempoActual;  // Actualiza el tiempo del último envío
+      }
+    }
+    delay(1000);  // Espera de 1 segundo para el siguiente ciclo de envío
   }
 }
-
 
 void ejecutarRutinaTask(void* parameter) {
   while (true) {
@@ -229,28 +232,20 @@ void ejecutarRutinaTask(void* parameter) {
       digitalWrite(releNivelBajoPin, HIGH);
       tiempoEsperarNivelBajo = millis();  // Inicia la espera del sensor de nivel de agua
 
-      // Espera hasta que el sensor de agua detecte que está en nivel bajo
+      // Espera hasta que el sensor de nivel de agua detecte bajo
       while (digitalRead(sensorNivelAguaPin) == LOW) {
-        // Espera no bloqueante mientras se detecta el nivel de agua
-        if (millis() - tiempoEsperarNivelBajo >= 1000) {
-          Serial.println("Esperando nivel de agua...");
-          tiempoEsperarNivelBajo = millis();  // Reinicia el tiempo de espera
-        }
+        delay(100);
       }
-
       digitalWrite(releNivelBajoPin, LOW);
+      delay(5000);  // Espera de 5 segundos antes de activar el siguiente rele
+
       digitalWrite(releNivelAltoPin, HIGH);
-      delay(10000);  // Espera de 10 segundos en nivel alto
+      delay(5000);  // Espera de 5 segundos
+
       digitalWrite(releNivelAltoPin, LOW);
       rutinaEjecutando = false;  // Finaliza la rutina
     }
-    delay(100);  // Ciclo de espera de rutina
+    delay(1000);  // Intervalo pequeño para no bloquear la tarea
   }
-}nd();
-        } else {
-          Serial.println("Error: No hay conexión WiFi.");
-        }
-        tiempoUltimoEnvio = tiempoActual;  // Actualiza el tiempo del último envío
-      }
-    }
-    delay(1000)
+}
+
